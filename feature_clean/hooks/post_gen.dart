@@ -68,16 +68,14 @@ void _createInjector(HookContext context, String basePath, String feature,
 
   if (!injectorFile.existsSync()) {
     final funcName = subfeature == null
-        ? 'inject${feature.pascalCase}()'
-        : 'inject${feature.pascalCase}${subfeature.pascalCase}()';
+        ? 'inject${feature.pascalCase}'
+        : 'inject${feature.pascalCase}${subfeature.pascalCase}';
 
     injectorFile.writeAsStringSync('''
       // ignore_for_file: depend_on_referenced_packages
       import 'package:get_it/get_it.dart';
       
-      final sl = GetIt.instance;
-      
-      void $funcName {
+      void $funcName(GetIt sl) {
         // TODO: Register your dependencies here.
       }
     ''');
@@ -112,9 +110,7 @@ void _createRootInjector(
     import 'package:get_it/get_it.dart';
     $imports
 
-    final sl = GetIt.instance;
-
-    void inject${feature.pascalCase}() {
+    void inject${feature.pascalCase}(GetIt sl) {
     $calls
     }
   ''';

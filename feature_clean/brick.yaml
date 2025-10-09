@@ -1,0 +1,16 @@
+name: feature_clean
+description: Clean Architecture Feature Template with optional sub-feature and GetIt injector.
+version: 0.1.0+1
+
+vars:
+  feature_name:
+    type: string
+    description: Feature name (e.g. auth, profile, etc.)
+    default: example
+    prompt: "What is the feature name :"
+
+  subfeature_name:
+    type: string
+    description: Comma-separated list of subfeatures (e.g. login, register)
+    default: ""
+    prompt: "Enter subfeatures (comma separated) :"

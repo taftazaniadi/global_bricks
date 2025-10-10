@@ -31,14 +31,16 @@ void run(HookContext context) {
   ];
 
   if (subfeatures.isEmpty) {
-    // ✅ Jika tidak ada subfeature → buat satu struktur + injector di root feature
+    // ✅ Jika tidak ada subfeature → buat satu struktur + injector + template
     _createFeatureStructure(context, featureBasePath, dirs);
+    _createTemplateFiles(context, featureBasePath, feature);
     _createInjector(context, featureBasePath, feature, null);
   } else {
-    // ✅ Jika ada beberapa subfeature → buat struktur & injector per subfeature
+    // ✅ Jika ada beberapa subfeature → buat struktur & injector per subfeature + template
     for (final sub in subfeatures) {
       final subPath = p.join(featureBasePath, sub.snakeCase);
       _createFeatureStructure(context, subPath, dirs);
+      _createTemplateFiles(context, subPath, feature, sub);
       _createInjector(context, subPath, feature, sub);
     }
 
@@ -49,6 +51,7 @@ void run(HookContext context) {
   context.logger.success('✨ Feature "$feature" generated successfully!');
 }
 
+/// Buat struktur folder
 void _createFeatureStructure(
     HookContext context, String basePath, List<String> dirs) {
   for (final dir in dirs) {
@@ -58,6 +61,41 @@ void _createFeatureStructure(
   }
 }
 
+/// Buat file template default di tiap folder
+void _createTemplateFiles(HookContext context, String basePath, String feature,
+    [String? subfeature]) {
+  final sub = subfeature?.snakeCase ?? 'example';
+  final feat = feature.snakeCase;
+
+  final templates = {
+    'data/repositories': ['${feat}_${sub}_repository_impl.dart'],
+    'data/mappers': ['${feat}_${sub}_mapper.dart'],
+    'data/datasources': ['${feat}_${sub}_remote_datasource.dart'],
+    'domain/entities': ['${feat}_${sub}_entity.dart'],
+    'domain/usecases': ['${feat}_${sub}_usecase.dart'],
+    'domain/repositories': ['${feat}_${sub}_repository.dart'],
+    'presentation/bloc': [
+      '${feat}_${sub}_bloc.dart',
+      '${feat}_${sub}_event.dart',
+      '${feat}_${sub}_state.dart'
+    ],
+    'presentation/page': ['${feat}_${sub}_page.dart'],
+    'presentation/widget': ['${feat}_${sub}_widget.dart'],
+  };
+
+  templates.forEach((folder, files) {
+    final folderPath = p.join(basePath, folder);
+    for (final file in files) {
+      final filePath = p.join(folderPath, file);
+      if (!File(filePath).existsSync()) {
+        File(filePath).writeAsStringSync('// TODO: Implement $file');
+        context.logger.info('📄 Created template file: $filePath');
+      }
+    }
+  });
+}
+
+/// Buat injector per feature/subfeature
 void _createInjector(HookContext context, String basePath, String feature,
     [String? subfeature]) {
   final fileName = subfeature == null
@@ -72,18 +110,19 @@ void _createInjector(HookContext context, String basePath, String feature,
         : 'inject${feature.pascalCase}${subfeature.pascalCase}';
 
     injectorFile.writeAsStringSync('''
-      // ignore_for_file: depend_on_referenced_packages
-      import 'package:get_it/get_it.dart';
+// ignore_for_file: depend_on_referenced_packages
+import 'package:get_it/get_it.dart';
       
-      void $funcName(GetIt sl) {
-        // TODO: Register your dependencies here.
-      }
+void $funcName(GetIt sl) {
+  // TODO: Register your dependencies here.
+}
     ''');
 
     context.logger.success('⚙️ Created injector file: ${injectorFile.path}');
   }
 }
 
+/// Buat root injector untuk mengimpor semua subfeature
 void _createRootInjector(
   HookContext context,
   String basePath,
@@ -100,19 +139,19 @@ void _createRootInjector(
     return "import '$subPath';";
   }).join('\n');
 
-  // Buat pemanggilan semua subfeature injector
+  // Buat pemanggilan semua subfeature injector dengan sl
   final calls = subfeatures.map((sub) {
-    return '  inject${feature.pascalCase}${sub.pascalCase}();';
+    return '  inject${feature.pascalCase}${sub.pascalCase}(sl);';
   }).join('\n');
 
   final content = '''
-    // ignore_for_file: depend_on_referenced_packages
-    import 'package:get_it/get_it.dart';
-    $imports
+// ignore_for_file: depend_on_referenced_packages
+import 'package:get_it/get_it.dart';
+$imports
 
-    void inject${feature.pascalCase}(GetIt sl) {
-    $calls
-    }
+void inject${feature.pascalCase}(GetIt sl) {
+  $calls
+}
   ''';
 
   injectorFile.writeAsStringSync(content);

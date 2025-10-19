@@ -65,22 +65,21 @@ void _createFeatureStructure(
 void _createTemplateFiles(HookContext context, String basePath, String feature,
     [String? subfeature]) {
   final sub = subfeature?.snakeCase ?? 'example';
-  final feat = feature.snakeCase;
 
   final templates = {
-    'data/repositories': ['${feat}_${sub}_repository_impl.dart'],
-    'data/mappers': ['${feat}_${sub}_mapper.dart'],
-    'data/datasources': ['${feat}_${sub}_remote_datasource.dart'],
-    'domain/entities': ['${feat}_${sub}_entity.dart'],
-    'domain/usecases': ['${feat}_${sub}_usecase.dart'],
-    'domain/repositories': ['${feat}_${sub}_repository.dart'],
+    'data/repositories': ['${sub}_repository_impl.dart'],
+    'data/mappers': ['${sub}_mapper.dart'],
+    'data/datasources': ['${sub}_remote_datasource.dart'],
+    'domain/entities': ['${sub}_entity.dart'],
+    'domain/usecases': ['${sub}_usecase.dart'],
+    'domain/repositories': ['${sub}_repository.dart'],
     'presentation/bloc': [
-      '${feat}_${sub}_bloc.dart',
-      '${feat}_${sub}_event.dart',
-      '${feat}_${sub}_state.dart'
+      '${sub}_bloc.dart',
+      '${sub}_event.dart',
+      '${sub}_state.dart'
     ],
-    'presentation/page': ['${feat}_${sub}_page.dart'],
-    'presentation/widget': ['${feat}_${sub}_widget.dart'],
+    'presentation/page': ['${sub}_page.dart'],
+    'presentation/widget': ['${sub}_widget.dart'],
   };
 
   templates.forEach((folder, files) {
@@ -100,14 +99,14 @@ void _createInjector(HookContext context, String basePath, String feature,
     [String? subfeature]) {
   final fileName = subfeature == null
       ? '${feature.snakeCase}_injector.dart'
-      : '${feature.snakeCase}_${subfeature.snakeCase}_injector.dart';
+      : '${subfeature.snakeCase}_injector.dart';
 
   final injectorFile = File(p.join(basePath, fileName));
 
   if (!injectorFile.existsSync()) {
     final funcName = subfeature == null
         ? 'inject${feature.pascalCase}'
-        : 'inject${feature.pascalCase}${subfeature.pascalCase}';
+        : 'inject${subfeature.pascalCase}';
 
     injectorFile.writeAsStringSync('''
 // ignore_for_file: depend_on_referenced_packages
@@ -135,13 +134,13 @@ void _createRootInjector(
   // Buat import untuk semua subfeature injector
   final imports = subfeatures.map((sub) {
     final subPath = p.join('.', sub.snakeCase,
-        '${feature.snakeCase}_${sub.snakeCase}_injector.dart');
+        '${sub.snakeCase}_injector.dart');
     return "import '$subPath';";
   }).join('\n');
 
   // Buat pemanggilan semua subfeature injector dengan sl
   final calls = subfeatures.map((sub) {
-    return '  inject${feature.pascalCase}${sub.pascalCase}(sl);';
+    return '  inject${sub.pascalCase}(sl);';
   }).join('\n');
 
   final content = '''

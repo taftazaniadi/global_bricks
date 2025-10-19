@@ -64,7 +64,7 @@ void _createFeatureStructure(
 /// Buat file template default di tiap folder
 void _createTemplateFiles(HookContext context, String basePath, String feature,
     [String? subfeature]) {
-  final sub = subfeature?.snakeCase ?? 'example';
+  final sub = subfeature?.snakeCase ?? feature.snakeCase;
 
   final templates = {
     'data/repositories': ['${sub}_repository_impl.dart'],

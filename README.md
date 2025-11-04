@@ -150,7 +150,7 @@ lib/features/auth/register/
 
 ## 📜 Lisensi
 
-MIT License © 2025 — Created by [Your Name](https://github.com/<username>)
+MIT License © 2025 — Created by [M Taftazani Adi](https://github.com/taftazaniadi)
 
 ---
 

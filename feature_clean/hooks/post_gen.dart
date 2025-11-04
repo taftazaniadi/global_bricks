@@ -3,20 +3,39 @@ import 'package:mason/mason.dart';
 import 'package:path/path.dart' as p;
 
 void run(HookContext context) {
-  final feature = context.vars['feature_name'] as String;
+  // Ambil input dari user
+  final rawFeature = context.vars['feature_name'] as String? ?? '';
   final rawSubfeatures =
       (context.vars['subfeature_name'] as String?)?.trim() ?? '';
 
-  // Pisahkan input subfeature berdasarkan koma
+  if (rawFeature.trim().isEmpty) {
+    context.logger.err('❌ Feature name tidak boleh kosong!');
+    exit(1);
+  }
+
+  // --- ✨ Sanitasi feature name ---
+  // Hilangkan spasi, slash berlebih, dan tanda miring di awal/akhir
+  final normalizedFeaturePath = rawFeature
+      .trim()
+      .replaceAll('\\', '/')
+      .replaceAll(RegExp(r'\s+'), '_') // spasi → underscore
+      .replaceAll(RegExp(r'/+'), '/') // hilangkan double slash
+      .replaceAll(RegExp(r'^/|/$'), ''); // hilangkan slash di awal/akhir
+
+  // Nama feature terakhir (misal dari "balance/fund_transfer" → "fund_transfer")
+  final featureName = p.basename(normalizedFeaturePath);
+
+  // --- ✨ Sanitasi subfeatures ---
   final subfeatures = rawSubfeatures
       .split(',')
-      .map((s) => s.trim())
+      .map((s) => s.trim().replaceAll(RegExp(r'\s+'), '_'))
       .where((s) => s.isNotEmpty)
       .toList();
 
-  final featureBasePath = p.join('lib', 'features', feature.snakeCase);
+  // Path dasar feature
+  final featureBasePath = p.join('lib', 'features', normalizedFeaturePath);
 
-  // Struktur default folder untuk setiap feature/subfeature
+  // Struktur folder default
   final dirs = [
     'data/datasources',
     'data/mappers',
@@ -26,34 +45,40 @@ void run(HookContext context) {
     'domain/repositories',
     'domain/usecases',
     'presentation/bloc',
-    'presentation/page',
-    'presentation/widget',
+    'presentation/pages',
+    'presentation/widgets',
   ];
 
+  // --- ✨ Generate struktur sesuai kondisi ---
   if (subfeatures.isEmpty) {
-    // ✅ Jika tidak ada subfeature → buat satu struktur + injector + template
+    // Case: tanpa subfeature
     _createFeatureStructure(context, featureBasePath, dirs);
-    _createTemplateFiles(context, featureBasePath, feature);
-    _createInjector(context, featureBasePath, feature, null);
+    _createTemplateFiles(context, featureBasePath, featureName);
+    _createInjector(context, featureBasePath, featureName, null);
   } else {
-    // ✅ Jika ada beberapa subfeature → buat struktur & injector per subfeature + template
+    // Case: dengan subfeature
     for (final sub in subfeatures) {
       final subPath = p.join(featureBasePath, sub.snakeCase);
       _createFeatureStructure(context, subPath, dirs);
-      _createTemplateFiles(context, subPath, feature, sub);
-      _createInjector(context, subPath, feature, sub);
+      _createTemplateFiles(context, subPath, featureName, sub);
+      _createInjector(context, subPath, featureName, sub);
     }
 
-    // ✅ Buat injector utama di root feature yang mengimpor semua subfeature
-    _createRootInjector(context, featureBasePath, feature, subfeatures);
+    // Root injector di feature utama
+    _createRootInjector(context, featureBasePath, featureName, subfeatures);
   }
 
-  context.logger.success('✨ Feature "$feature" generated successfully!');
+  context.logger.success(
+    '✨ Feature "$normalizedFeaturePath" generated successfully!',
+  );
 }
 
-/// Buat struktur folder
+/// Buat struktur folder dasar
 void _createFeatureStructure(
-    HookContext context, String basePath, List<String> dirs) {
+  HookContext context,
+  String basePath,
+  List<String> dirs,
+) {
   for (final dir in dirs) {
     final path = p.join(basePath, dir);
     Directory(path).createSync(recursive: true);
@@ -61,9 +86,13 @@ void _createFeatureStructure(
   }
 }
 
-/// Buat file template default di tiap folder
-void _createTemplateFiles(HookContext context, String basePath, String feature,
-    [String? subfeature]) {
+/// Buat file template placeholder di tiap folder
+void _createTemplateFiles(
+  HookContext context,
+  String basePath,
+  String feature, [
+  String? subfeature,
+]) {
   final sub = subfeature?.snakeCase ?? feature.snakeCase;
 
   final templates = {
@@ -78,8 +107,8 @@ void _createTemplateFiles(HookContext context, String basePath, String feature,
       '${sub}_event.dart',
       '${sub}_state.dart'
     ],
-    'presentation/page': ['${sub}_page.dart'],
-    'presentation/widget': ['${sub}_widget.dart'],
+    'presentation/pages': ['${sub}_page.dart'],
+    'presentation/widgets': ['${sub}_widget.dart'],
   };
 
   templates.forEach((folder, files) {
@@ -94,9 +123,13 @@ void _createTemplateFiles(HookContext context, String basePath, String feature,
   });
 }
 
-/// Buat injector per feature/subfeature
-void _createInjector(HookContext context, String basePath, String feature,
-    [String? subfeature]) {
+/// Buat injector untuk tiap feature/subfeature
+void _createInjector(
+  HookContext context,
+  String basePath,
+  String feature, [
+  String? subfeature,
+]) {
   final fileName = subfeature == null
       ? '${feature.snakeCase}_injector.dart'
       : '${subfeature.snakeCase}_injector.dart';
@@ -121,7 +154,7 @@ void $funcName(GetIt sl) {
   }
 }
 
-/// Buat root injector untuk mengimpor semua subfeature
+/// Buat root injector yang menggabungkan semua subfeature injector
 void _createRootInjector(
   HookContext context,
   String basePath,
@@ -131,14 +164,12 @@ void _createRootInjector(
   final fileName = '${feature.snakeCase}_injector.dart';
   final injectorFile = File(p.join(basePath, fileName));
 
-  // Buat import untuk semua subfeature injector
   final imports = subfeatures.map((sub) {
-    final subPath = p.join('.', sub.snakeCase,
-        '${sub.snakeCase}_injector.dart');
+    final subPath =
+        p.join('.', sub.snakeCase, '${sub.snakeCase}_injector.dart');
     return "import '$subPath';";
   }).join('\n');
 
-  // Buat pemanggilan semua subfeature injector dengan sl
   final calls = subfeatures.map((sub) {
     return '  inject${sub.pascalCase}(sl);';
   }).join('\n');
@@ -149,7 +180,7 @@ import 'package:get_it/get_it.dart';
 $imports
 
 void inject${feature.pascalCase}(GetIt sl) {
-  $calls
+$calls
 }
   ''';
 

@@ -6,8 +6,8 @@ vars:
   feature_name:
     type: string
     description: Feature name (e.g. auth, profile, etc.)
-    default: example
-    prompt: "What is the feature name :"
+    default: ""
+    prompt: "What is the feature name (example | example/example) :"
 
   subfeature_name:
     type: string

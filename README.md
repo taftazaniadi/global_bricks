@@ -63,7 +63,12 @@ Jika belum punya Mason, install dulu secara global:
 dart pub global activate mason_cli
 ```
 
-### 2️⃣ Tambahkan Brick ke proyek kamu
+### 2️⃣ Inisialisasi Mason di proyek kamu
+```bash
+mason init
+```
+
+### 3️⃣ Tambahkan Brick ke proyek kamu
 Jika brick ini ada di dalam folder proyek:
 
 ```bash
@@ -73,10 +78,10 @@ mason add feature_clean --path ./bricks/feature_clean
 Atau jika kamu gunakan dari GitHub repo:
 
 ```bash
-mason add feature_clean --git-url https://github.com/<username>/feature_clean_brick.git
+mason add feature_clean --git-url https://github.com/taftazaniadi/global_bricks.git
 ```
 
-### 3️⃣ Update brick list
+### 4️⃣ Update brick list
 ```bash
 mason get
 ```

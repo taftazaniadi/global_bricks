@@ -1,0 +1,6 @@
+name: global_bricks
+description: A collection of Mason bricks for Flutter projects
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"

@@ -1,6 +1,6 @@
-# 🧱 Mason Brick — Feature Clean
+# 🧱 Mason Brick — Features
 
-**Feature Clean** adalah custom brick Mason yang membantu kamu membuat struktur **Clean Architecture** berbasis **Flutter + BLoC + GetIt** secara otomatis.  
+**Features** adalah custom brick Mason yang membantu kamu membuat struktur **Clean Architecture** berbasis **Flutter + BLoC + GetIt** secara otomatis.  
 Brick ini mendukung pembuatan **multi sub-feature**, lengkap dengan struktur folder `data`, `domain`, `presentation`, dan file injector.
 
 ---
@@ -72,13 +72,13 @@ mason init
 Jika brick ini ada di dalam folder proyek:
 
 ```bash
-mason add feature_clean --path ./bricks/feature_clean
+mason add features --path ./bricks/features
 ```
 
 Atau jika kamu gunakan dari GitHub repo:
 
 ```bash
-mason add feature_clean --git-url https://github.com/taftazaniadi/global_bricks.git
+mason add features --git-url https://github.com/taftazaniadi/global_bricks.git
 ```
 
 ### 4️⃣ Update brick list
@@ -92,7 +92,7 @@ mason get
 
 ### 🔹 Buat satu feature tanpa sub-feature:
 ```bash
-mason make feature_clean
+mason make features
 ```
 Lalu isi prompt:
 ```
@@ -110,7 +110,7 @@ lib/features/auth/
 
 ### 🔹 Buat feature dengan beberapa sub-feature:
 ```bash
-mason make feature_clean
+mason make features
 ```
 Lalu isi prompt:
 ```

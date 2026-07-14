@@ -1,5 +1,5 @@
-name: feature_clean_hooks
-description: Hook dependencies for feature_clean brick
+name: features_hooks
+description: Hook dependencies for features brick
 version: 1.0.0+1
 publish_to: none
 

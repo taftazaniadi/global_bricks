@@ -284,13 +284,32 @@ void _createRootInjector(
   final fileName = '${feature.snakeCase}_injector.dart';
   final injectorFile = File(p.join(basePath, fileName));
 
-  final imports = subfeatures.map((sub) {
+  // Kumpulkan semua subfeatures: yang baru digenerate + yang sudah ada di disk
+  final allSubfeatures = <String>{};
+  allSubfeatures.addAll(subfeatures.map((s) => s.snakeCase));
+
+  final dir = Directory(basePath);
+  if (dir.existsSync()) {
+    for (final entity in dir.listSync()) {
+      if (entity is Directory) {
+        final name = p.basename(entity.path);
+        final subInjector = File(p.join(entity.path, '${name.snakeCase}_injector.dart'));
+        if (subInjector.existsSync()) {
+          allSubfeatures.add(name.snakeCase);
+        }
+      }
+    }
+  }
+
+  final sortedSubs = allSubfeatures.toList()..sort();
+
+  final imports = sortedSubs.map((sub) {
     final subPath =
-        p.join('.', sub.snakeCase, '${sub.snakeCase}_injector.dart');
+        p.join('.', sub, '${sub}_injector.dart').replaceAll('\\', '/');
     return "import '$subPath';";
   }).join('\n');
 
-  final calls = subfeatures.map((sub) {
+  final calls = sortedSubs.map((sub) {
     return '  inject${sub.pascalCase}(sl);';
   }).join('\n');
 

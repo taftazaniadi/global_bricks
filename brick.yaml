@@ -3,14 +3,20 @@ description: Clean Architecture Feature Template with optional sub-feature and G
 version: 0.1.0+1
 
 vars:
+  target_path:
+    type: string
+    description: Target directory path for the feature (relative to project root)
+    default: "lib/features"
+    prompt: "Target directory path : "
+
   feature_name:
     type: string
     description: Feature name (e.g. auth, profile, etc.)
     default: ""
-    prompt: "What is the feature name (example | example/example) :"
+    prompt: "Feature name (e.g., auth or checkout/payment) : "
 
   subfeature_name:
     type: string
     description: Comma-separated list of subfeatures (e.g. login, register)
     default: ""
-    prompt: "Enter subfeatures (comma separated) :"
+    prompt: "Subfeatures (comma-separated, optional) : "

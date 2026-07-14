@@ -1,4 +1,4 @@
-name: feature_clean
+name: features
 description: Clean Architecture Feature Template with optional sub-feature and GetIt injector.
 version: 0.1.0+1
 

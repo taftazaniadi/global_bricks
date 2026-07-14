@@ -4,6 +4,11 @@ import 'package:path/path.dart' as p;
 
 void run(HookContext context) {
   // Ambil input dari user
+  final targetPath = (context.vars['target_path'] as String? ?? 'lib/features')
+      .trim()
+      .replaceAll('\\', '/')
+      .replaceAll(RegExp(r'/+'), '/')
+      .replaceAll(RegExp(r'^/|/$'), '');
   final rawFeature = context.vars['feature_name'] as String? ?? '';
   final rawSubfeatures =
       (context.vars['subfeature_name'] as String?)?.trim() ?? '';
@@ -33,7 +38,7 @@ void run(HookContext context) {
       .toList();
 
   // Path dasar feature
-  final featureBasePath = p.join('lib', 'features', normalizedFeaturePath);
+  final featureBasePath = p.join(targetPath, normalizedFeaturePath);
 
   // Struktur folder default
   final dirs = [
@@ -116,11 +121,126 @@ void _createTemplateFiles(
     for (final file in files) {
       final filePath = p.join(folderPath, file);
       if (!File(filePath).existsSync()) {
-        File(filePath).writeAsStringSync('// TODO: Implement $file');
+        File(filePath).writeAsStringSync(_getFileContent(folder, file, sub));
         context.logger.info('📄 Created template file: $filePath');
       }
     }
   });
+}
+
+/// Helper untuk generate boilerplate code untuk masing-masing file
+String _getFileContent(String folder, String file, String sub) {
+  final name = sub.pascalCase;
+  if (folder == 'data/repositories') {
+    return '''
+import '../../domain/repositories/${sub}_repository.dart';
+
+class ${name}RepositoryImpl implements ${name}Repository {
+  // TODO: Add constructor and inject remote/local datasources
+}
+''';
+  } else if (folder == 'data/mappers') {
+    return '''
+class ${name}Mapper {
+  // TODO: Implement mapper (e.g. model to entity)
+}
+''';
+  } else if (folder == 'data/datasources') {
+    return '''
+class ${name}RemoteDataSource {
+  // TODO: Implement remote data source methods
+}
+''';
+  } else if (folder == 'domain/entities') {
+    return '''
+class ${name}Entity {
+  const ${name}Entity();
+}
+''';
+  } else if (folder == 'domain/usecases') {
+    return '''
+import '../repositories/${sub}_repository.dart';
+
+class ${name}UseCase {
+  final ${name}Repository repository;
+
+  const ${name}UseCase(this.repository);
+
+  // TODO: Implement execution logic
+  // Future<void> call() async {}
+}
+''';
+  } else if (folder == 'domain/repositories') {
+    return '''
+abstract class ${name}Repository {
+  // TODO: Add repository methods
+}
+''';
+  } else if (folder == 'presentation/bloc') {
+    if (file.endsWith('_bloc.dart')) {
+      return '''
+// ignore_for_file: depend_on_referenced_packages
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '${sub}_event.dart';
+import '${sub}_state.dart';
+
+class ${name}Bloc extends Bloc<${name}Event, ${name}State> {
+  ${name}Bloc() : super(const ${name}Initial()) {
+    // TODO: Register event handlers
+  }
+}
+''';
+    } else if (file.endsWith('_event.dart')) {
+      return '''
+abstract class ${name}Event {
+  const ${name}Event();
+}
+''';
+    } else if (file.endsWith('_state.dart')) {
+      return '''
+abstract class ${name}State {
+  const ${name}State();
+}
+
+class ${name}Initial extends ${name}State {
+  const ${name}Initial();
+}
+''';
+    }
+  } else if (folder == 'presentation/pages') {
+    return '''
+// ignore_for_file: depend_on_referenced_packages
+import 'package:flutter/material.dart';
+
+class ${name}Page extends StatelessWidget {
+  const ${name}Page({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(
+        child: Text('${name}Page'),
+      ),
+    );
+  }
+}
+''';
+  } else if (folder == 'presentation/widgets') {
+    return '''
+// ignore_for_file: depend_on_referenced_packages
+import 'package:flutter/material.dart';
+
+class ${name}Widget extends StatelessWidget {
+  const ${name}Widget({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const SizedBox();
+  }
+}
+''';
+  }
+  return '// TODO: Implement $file';
 }
 
 /// Buat injector untuk tiap feature/subfeature

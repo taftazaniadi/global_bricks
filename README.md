@@ -1,162 +1,162 @@
 # 🧱 Mason Brick — Features
 
-**Features** adalah custom brick Mason yang membantu kamu membuat struktur **Clean Architecture** berbasis **Flutter + BLoC + GetIt** secara otomatis.  
-Brick ini mendukung pembuatan **multi sub-feature**, lengkap dengan struktur folder `data`, `domain`, `presentation`, dan file injector.
+**Features** adalah template yang membantu kamu membuat struktur proyek `Flutter` dengan cara yang lebih rapi dan teratur.
+
+Repository ini bukan aplikasi `Flutter`, melainkan paket `Mason` yang berisi `brick`. `Brick` ini digunakan di proyek `Flutter` lain untuk membuat struktur fitur secara otomatis, sehingga kamu tidak perlu menulis struktur dasar dari nol setiap kali membuat fitur baru.
 
 ---
 
-## 🚀 Fitur
+## ✨ Apa yang bisa dilakukan brick ini?
 
-✅ Clean Architecture lengkap (data, domain, presentation)  
-✅ Support **multi sub-feature** dengan input comma-separated  
-✅ Otomatis membuat **injector per feature/sub-feature**  
-✅ Dapat dipakai lokal atau global lintas proyek  
-✅ Siap pakai untuk arsitektur Flutter + BLoC + GetIt
+`Brick` ini akan membantu kamu membuat:
 
----
-
-## 📂 Struktur Folder yang Dihasilkan
-
-Contoh tanpa sub-feature:
-
-```
-lib/features/auth/
-├── data/
-│   ├── datasources/
-│   ├── mappers/
-│   ├── models/
-│   └── repositories/
-├── domain/
-│   ├── entities/
-│   ├── repositories/
-│   └── usecases/
-├── presentation/
-│   ├── bloc/
-│   ├── page/
-│   └── widget/
-└── auth_injector.dart
-```
-
-Contoh dengan multi sub-feature (`login, register`):
-
-```
-lib/features/auth/
-├── login/
-│   ├── data/
-│   ├── domain/
-│   ├── presentation/
-│   └── auth_login_injector.dart
-└── register/
-    ├── data/
-    ├── domain/
-    ├── presentation/
-    └── auth_register_injector.dart
-```
+- folder untuk fitur seperti `data`, `domain`, dan `presentation`
+- file awal untuk `repository`, `use case`, `entity`, `bloc`, `page`, dan `widget`
+- file injector otomatis untuk kebutuhan `dependency injection`
+- struktur feature sederhana, baik untuk satu fitur maupun beberapa sub-fitur
 
 ---
 
-## ⚙️ Cara Instalasi
+## 📂 Contoh hasil yang dibuat
 
-### 1️⃣ Tambahkan Mason ke proyek kamu
-Jika belum punya Mason, install dulu secara global:
+### Jika hanya satu fitur
+
+Berikut contoh struktur yang akan dibuat saat kamu membuat fitur `auth` tanpa sub-fitur:
+
+```text
+lib/
+└── features/
+    └── auth/
+        ├── data/
+        │   ├── datasources/
+        │   ├── mappers/
+        │   ├── models/
+        │   └── repositories/
+        ├── domain/
+        │   ├── entities/
+        │   ├── repositories/
+        │   └── usecases/
+        ├── presentation/
+        │   ├── bloc/
+        │   ├── pages/
+        │   └── widgets/
+        └── auth_injector.dart
+```
+
+Penjelasan singkat:
+
+- `data/`: tempat file untuk sumber data, mapper, model, dan repository implementasi
+- `domain/`: tempat entity, repository interface, dan use case
+- `presentation/`: tempat file bloc, halaman, dan widget UI
+- `auth_injector.dart`: file untuk mendaftarkan dependency fitur ini
+
+### Jika ada beberapa sub-fitur
+
+Berikut contoh ketika kamu membuat fitur `auth` dengan sub-fitur `login` dan `register`:
+
+```text
+lib/
+└── features/
+    └── auth/
+        ├── login/
+        │   ├── data/
+        │   ├── domain/
+        │   ├── presentation/
+        │   └── login_injector.dart
+        ├── register/
+        │   ├── data/
+        │   ├── domain/
+        │   ├── presentation/
+        │   └── register_injector.dart
+        └── auth_injector.dart
+```
+
+Penjelasan singkat:
+
+- tiap sub-fitur akan punya struktur folder sendiri
+- setiap sub-fitur juga akan mendapatkan file injector tersendiri
+- file `auth_injector.dart` di bagian atas berfungsi sebagai injector utama yang menghubungkan sub-fitur
+
+---
+
+## 🤝 Kapan brick ini cocok dipakai?
+
+`Brick` ini cocok digunakan jika kamu:
+
+- sedang membuat proyek `Flutter` dengan banyak fitur
+- ingin struktur folder yang rapi sejak awal
+- ingin mempercepat pembuatan fitur berdasarkan arsitektur `Clean Architecture`
+- ingin mengurangi pekerjaan menulis boilerplate berulang-ulang
+
+Contoh sederhana: saat kamu membuat fitur login, kamu bisa langsung membuat struktur `auth` beserta file-file awalnya dengan satu perintah.
+
+---
+
+## ⚙️ Cara memasang
+
+### 1. Install Mason
+
 ```bash
 dart pub global activate mason_cli
 ```
 
-### 2️⃣ Inisialisasi Mason di proyek kamu
+### 2. Siapkan Mason di proyek kamu
+
 ```bash
 mason init
 ```
 
-### 3️⃣ Tambahkan Brick ke proyek kamu
-Jika brick ini ada di dalam folder proyek:
+### 3. Tambahkan brick ini
+
+Jika brick ada di folder lokal, jalankan dari direktori repository brick ini:
 
 ```bash
-mason add features --path ./bricks/features
+mason add features --path .
 ```
 
-Atau jika kamu gunakan dari GitHub repo:
+Jika ingin mengambil dari GitHub:
 
 ```bash
 mason add features --git-url https://github.com/taftazaniadi/global_bricks.git
 ```
 
-### 4️⃣ Update brick list
+### 4. Ambil list brick
+
 ```bash
 mason get
 ```
 
 ---
 
-## 🧩 Cara Menggunakan
+## 🧩 Cara pakai
 
-### 🔹 Buat satu feature tanpa sub-feature:
+Jalankan perintah berikut:
+
 ```bash
 mason make features
 ```
-Lalu isi prompt:
-```
-What is the feature name : auth
-Enter subfeatures (comma separated) : 
-```
 
-📁 Output:
-```
-lib/features/auth/
-└── auth_injector.dart
+Lalu isi input yang diminta, misalnya:
+
+```text
+Target directory path : lib/features
+Feature name (e.g., auth or checkout/payment) : auth
+Subfeatures (comma-separated, optional) : login, register
 ```
 
 ---
 
-### 🔹 Buat feature dengan beberapa sub-feature:
-```bash
-mason make features
-```
-Lalu isi prompt:
-```
-What is the feature name : auth
-Enter subfeatures (comma separated) : login, register
-```
+## 📝 Catatan penting
 
-📁 Output:
-```
-lib/features/auth/login/
-└── auth_login_injector.dart
-
-lib/features/auth/register/
-└── auth_register_injector.dart
-```
-
----
-
-## 🧠 Catatan Penting
-
-- Injector otomatis dibuat di level **feature** atau **sub-feature**, tergantung input.  
-- Nama file injector mengikuti format:
-  ```
-  {feature_name}_{subfeature_name}_injector.dart
-  ```
-- Gunakan fungsi:
-  ```dart
-  void injectAuthLogin() {
-    // Register dependency untuk auth/login
-  }
-  ```
-
----
-
-## 💡 Tips Penggunaan
-
-- Gunakan **GetIt** (`sl`) untuk dependency injection per feature.
-- Kamu bisa memperluas `post_gen.dart` untuk auto-register ke `global_injector.dart`.
-- Cocok digunakan bersama **BLoC**, **Dartz**, **Retrofit**, dan **Freezed**.
+- File yang dibuat awalnya masih berupa template. Kamu masih perlu mengisi logika sesuai kebutuhan proyek.
+- Injector akan dibuat otomatis supaya memudahkan pengaturan dependency.
+- Brick ini cocok untuk proyek Flutter yang ingin struktur kodenya lebih rapi sejak awal.
 
 ---
 
 ## 📜 Lisensi
 
-MIT License © 2025 — Created by [M Taftazani Adi](https://github.com/taftazaniadi)
+MIT License © 2025
 
----
+Dibuat oleh [M Taftazani Adi](https://github.com/taftazaniadi)
 
-✨ Selamat membangun proyek Flutter kamu dengan arsitektur yang rapi dan scalable!

@@ -1,6 +1,46 @@
 import 'dart:io';
 import 'package:mason/mason.dart';
 import 'package:path/path.dart' as p;
+import 'package:recase/recase.dart';
+
+String normalizeFeaturePath(String rawFeature) {
+  return rawFeature
+      .trim()
+      .replaceAll('\\', '/')
+      .split('/')
+      .map((segment) => segment.trim())
+      .where((segment) => segment.isNotEmpty)
+      .map((segment) => segment.replaceAll(RegExp(r'\s+'), '_').snakeCase)
+      .join('/');
+}
+
+String normalizeFeatureName(String rawFeature) {
+  return p.basename(normalizeFeaturePath(rawFeature));
+}
+
+List<String> normalizeSubfeatures(String rawSubfeatures) {
+  return rawSubfeatures
+      .split(',')
+      .map((segment) => segment.trim())
+      .where((segment) => segment.isNotEmpty)
+      .map((segment) => segment.replaceAll(RegExp(r'\s+'), '_').snakeCase)
+      .toList();
+}
+
+List<String> buildDefaultFeatureDirs() {
+  return [
+    'data/datasources',
+    'data/mappers',
+    'data/models',
+    'data/repositories',
+    'domain/entities',
+    'domain/repositories',
+    'domain/usecases',
+    'presentation/bloc',
+    'presentation/pages',
+    'presentation/widgets',
+  ];
+}
 
 void run(HookContext context) {
   // Ambil input dari user
@@ -19,40 +59,19 @@ void run(HookContext context) {
   }
 
   // --- ✨ Sanitasi feature name ---
-  // Hilangkan spasi, slash berlebih, dan tanda miring di awal/akhir
-  final normalizedFeaturePath = rawFeature
-      .trim()
-      .replaceAll('\\', '/')
-      .replaceAll(RegExp(r'\s+'), '_') // spasi → underscore
-      .replaceAll(RegExp(r'/+'), '/') // hilangkan double slash
-      .replaceAll(RegExp(r'^/|/$'), ''); // hilangkan slash di awal/akhir
+  final normalizedFeaturePath = normalizeFeaturePath(rawFeature);
 
   // Nama feature terakhir (misal dari "balance/fund_transfer" → "fund_transfer")
-  final featureName = p.basename(normalizedFeaturePath);
+  final featureName = normalizeFeatureName(rawFeature);
 
   // --- ✨ Sanitasi subfeatures ---
-  final subfeatures = rawSubfeatures
-      .split(',')
-      .map((s) => s.trim().replaceAll(RegExp(r'\s+'), '_'))
-      .where((s) => s.isNotEmpty)
-      .toList();
+  final subfeatures = normalizeSubfeatures(rawSubfeatures);
 
   // Path dasar feature
   final featureBasePath = p.join(targetPath, normalizedFeaturePath);
 
   // Struktur folder default
-  final dirs = [
-    'data/datasources',
-    'data/mappers',
-    'data/models',
-    'data/repositories',
-    'domain/entities',
-    'domain/repositories',
-    'domain/usecases',
-    'presentation/bloc',
-    'presentation/pages',
-    'presentation/widgets',
-  ];
+  final dirs = buildDefaultFeatureDirs();
 
   // --- ✨ Generate struktur sesuai kondisi ---
   if (subfeatures.isEmpty) {
@@ -291,12 +310,16 @@ void _createRootInjector(
   final dir = Directory(basePath);
   if (dir.existsSync()) {
     for (final entity in dir.listSync()) {
-      if (entity is Directory) {
-        final name = p.basename(entity.path);
-        final subInjector = File(p.join(entity.path, '${name.snakeCase}_injector.dart'));
-        if (subInjector.existsSync()) {
-          allSubfeatures.add(name.snakeCase);
-        }
+      if (entity is! Directory) {
+        continue;
+      }
+
+      final name = p.basename(entity.path);
+      final subInjector = File(
+        p.join(entity.path, '${name.snakeCase}_injector.dart'),
+      );
+      if (subInjector.existsSync()) {
+        allSubfeatures.add(name.snakeCase);
       }
     }
   }
@@ -304,8 +327,7 @@ void _createRootInjector(
   final sortedSubs = allSubfeatures.toList()..sort();
 
   final imports = sortedSubs.map((sub) {
-    final subPath =
-        p.join('.', sub, '${sub}_injector.dart').replaceAll('\\', '/');
+    final subPath = p.posix.join('.', sub, '${sub}_injector.dart');
     return "import '$subPath';";
   }).join('\n');
 

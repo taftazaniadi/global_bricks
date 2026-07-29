@@ -1,7 +1,26 @@
 import 'dart:io';
 import 'package:mason/mason.dart';
 import 'package:path/path.dart' as p;
-import 'package:recase/recase.dart';
+
+String _toSnakeCase(String value) {
+  final normalized = value
+      .trim()
+      .replaceAll(RegExp(r'[^a-zA-Z0-9]+'), '_')
+      .replaceAll(RegExp(r'_+'), '_')
+      .replaceAll(RegExp(r'^_|_$'), '');
+
+  return normalized.isEmpty ? 'feature' : normalized.toLowerCase();
+}
+
+String _toPascalCase(String value) {
+  final parts = value
+      .split(RegExp(r'[^a-zA-Z0-9]+'))
+      .where((segment) => segment.isNotEmpty)
+      .map((segment) => segment.isEmpty ? '' : segment[0].toUpperCase() + segment.substring(1).toLowerCase())
+      .toList();
+
+  return parts.isEmpty ? 'Feature' : parts.join();
+}
 
 String normalizeFeaturePath(String rawFeature) {
   return rawFeature
@@ -10,7 +29,7 @@ String normalizeFeaturePath(String rawFeature) {
       .split('/')
       .map((segment) => segment.trim())
       .where((segment) => segment.isNotEmpty)
-      .map((segment) => segment.replaceAll(RegExp(r'\s+'), '_').snakeCase)
+      .map((segment) => _toSnakeCase(segment.replaceAll(RegExp(r'\s+'), '_')))
       .join('/');
 }
 
@@ -23,7 +42,7 @@ List<String> normalizeSubfeatures(String rawSubfeatures) {
       .split(',')
       .map((segment) => segment.trim())
       .where((segment) => segment.isNotEmpty)
-      .map((segment) => segment.replaceAll(RegExp(r'\s+'), '_').snakeCase)
+      .map((segment) => _toSnakeCase(segment.replaceAll(RegExp(r'\s+'), '_')))
       .toList();
 }
 
@@ -82,7 +101,7 @@ void run(HookContext context) {
   } else {
     // Case: dengan subfeature
     for (final sub in subfeatures) {
-      final subPath = p.join(featureBasePath, sub.snakeCase);
+      final subPath = p.join(featureBasePath, _toSnakeCase(sub));
       _createFeatureStructure(context, subPath, dirs);
       _createTemplateFiles(context, subPath, featureName, sub);
       _createInjector(context, subPath, featureName, sub);
@@ -117,7 +136,7 @@ void _createTemplateFiles(
   String feature, [
   String? subfeature,
 ]) {
-  final sub = subfeature?.snakeCase ?? feature.snakeCase;
+  final sub = _toSnakeCase(subfeature ?? feature);
 
   final templates = {
     'data/repositories': ['${sub}_repository_impl.dart'],
@@ -149,7 +168,7 @@ void _createTemplateFiles(
 
 /// Helper untuk generate boilerplate code untuk masing-masing file
 String _getFileContent(String folder, String file, String sub) {
-  final name = sub.pascalCase;
+  final name = _toPascalCase(sub);
   if (folder == 'data/repositories') {
     return '''
 import '../../domain/repositories/${sub}_repository.dart';
@@ -270,15 +289,15 @@ void _createInjector(
   String? subfeature,
 ]) {
   final fileName = subfeature == null
-      ? '${feature.snakeCase}_injector.dart'
-      : '${subfeature.snakeCase}_injector.dart';
+      ? '${_toSnakeCase(feature)}_injector.dart'
+      : '${_toSnakeCase(subfeature)}_injector.dart';
 
   final injectorFile = File(p.join(basePath, fileName));
 
   if (!injectorFile.existsSync()) {
     final funcName = subfeature == null
-        ? 'inject${feature.pascalCase}'
-        : 'inject${subfeature.pascalCase}';
+        ? 'inject${_toPascalCase(feature)}'
+        : 'inject${_toPascalCase(subfeature)}';
 
     injectorFile.writeAsStringSync('''
 // ignore_for_file: depend_on_referenced_packages
@@ -300,12 +319,12 @@ void _createRootInjector(
   String feature,
   List<String> subfeatures,
 ) {
-  final fileName = '${feature.snakeCase}_injector.dart';
+  final fileName = '${_toSnakeCase(feature)}_injector.dart';
   final injectorFile = File(p.join(basePath, fileName));
 
   // Kumpulkan semua subfeatures: yang baru digenerate + yang sudah ada di disk
   final allSubfeatures = <String>{};
-  allSubfeatures.addAll(subfeatures.map((s) => s.snakeCase));
+  allSubfeatures.addAll(subfeatures.map((s) => _toSnakeCase(s)));
 
   final dir = Directory(basePath);
   if (dir.existsSync()) {
@@ -316,10 +335,10 @@ void _createRootInjector(
 
       final name = p.basename(entity.path);
       final subInjector = File(
-        p.join(entity.path, '${name.snakeCase}_injector.dart'),
+        p.join(entity.path, '${_toSnakeCase(name)}_injector.dart'),
       );
       if (subInjector.existsSync()) {
-        allSubfeatures.add(name.snakeCase);
+        allSubfeatures.add(_toSnakeCase(name));
       }
     }
   }
@@ -332,7 +351,7 @@ void _createRootInjector(
   }).join('\n');
 
   final calls = sortedSubs.map((sub) {
-    return '  inject${sub.pascalCase}(sl);';
+    return '  inject${_toPascalCase(sub)}(sl);';
   }).join('\n');
 
   final content = '''
@@ -340,7 +359,7 @@ void _createRootInjector(
 import 'package:get_it/get_it.dart';
 $imports
 
-void inject${feature.pascalCase}(GetIt sl) {
+void inject${_toPascalCase(feature)}(GetIt sl) {
 $calls
 }
   ''';

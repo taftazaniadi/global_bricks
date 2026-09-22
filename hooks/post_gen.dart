@@ -35,25 +35,15 @@ List<String> buildDefaultFeatureDirs() => [
   'presentation/widgets',
 ];
 
-bool _asBool(dynamic value) {
-  if (value is bool) return value;
-  if (value is String) {
-    final normalized = value.trim().toLowerCase();
-    return normalized == 'true' || normalized == 'yes' || normalized == 'y';
-  }
-  return false;
-}
-
 void run(HookContext context) {
-  final useDefaultTarget = _asBool(context.vars['default_target']);
-  final requestedTargetPath = useDefaultTarget
-      ? 'lib/features'
-      : (context.vars['custom_target_path'] as String? ?? 'lib/features');
-  final targetPath = requestedTargetPath.trim().replaceAll('\\', '/').replaceAll(RegExp(r'/+'), '/').replaceAll(RegExp(r'^/|/$'), '');
+  final targetPath = (context.vars['target_path'] as String? ?? 'lib/features')
+      .trim()
+      .replaceAll('\\', '/')
+      .replaceAll(RegExp(r'/+'), '/')
+      .replaceAll(RegExp(r'^/|/$'), '');
 
   final rawFeature = context.vars['feature_name'] as String? ?? '';
-  final hasSubfeatures = _asBool(context.vars['has_subfeatures']);
-  final rawSubfeatures = hasSubfeatures ? (context.vars['subfeature_name'] as String?)?.trim() ?? '' : '';
+  final rawSubfeatures = context.vars['subfeature_name'] as String? ?? '';
 
   if (rawFeature.trim().isEmpty) {
     context.logger.err('❌ Feature name tidak boleh kosong!');

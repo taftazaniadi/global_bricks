@@ -3,125 +3,87 @@ import 'package:mason/mason.dart';
 import 'package:path/path.dart' as p;
 
 String _toSnakeCase(String value) {
-  final normalized = value
-      .trim()
-      .replaceAll(RegExp(r'[^a-zA-Z0-9]+'), '_')
-      .replaceAll(RegExp(r'_+'), '_')
-      .replaceAll(RegExp(r'^_|_$'), '');
-
+  final normalized = value.trim().replaceAll(RegExp(r'[^a-zA-Z0-9]+'), '_').replaceAll(RegExp(r'_+'), '_').replaceAll(RegExp(r'^_|_$'), '');
   return normalized.isEmpty ? 'feature' : normalized.toLowerCase();
 }
 
 String _toPascalCase(String value) {
-  final parts = value
-      .split(RegExp(r'[^a-zA-Z0-9]+'))
-      .where((segment) => segment.isNotEmpty)
-      .map((segment) => segment.isEmpty ? '' : segment[0].toUpperCase() + segment.substring(1).toLowerCase())
-      .toList();
-
+  final parts = value.split(RegExp(r'[^a-zA-Z0-9]+')).where((segment) => segment.isNotEmpty).map((segment) => segment[0].toUpperCase() + segment.substring(1).toLowerCase()).toList();
   return parts.isEmpty ? 'Feature' : parts.join();
 }
 
 String normalizeFeaturePath(String rawFeature) {
-  return rawFeature
-      .trim()
-      .replaceAll('\\', '/')
-      .split('/')
-      .map((segment) => segment.trim())
-      .where((segment) => segment.isNotEmpty)
-      .map((segment) => _toSnakeCase(segment.replaceAll(RegExp(r'\s+'), '_')))
-      .join('/');
+  return rawFeature.trim().replaceAll('\\', '/').split('/').map((segment) => segment.trim()).where((segment) => segment.isNotEmpty).map((segment) => _toSnakeCase(segment.replaceAll(RegExp(r'\s+'), '_'))).join('/');
 }
 
-String normalizeFeatureName(String rawFeature) {
-  return p.basename(normalizeFeaturePath(rawFeature));
-}
+String normalizeFeatureName(String rawFeature) => p.basename(normalizeFeaturePath(rawFeature));
 
 List<String> normalizeSubfeatures(String rawSubfeatures) {
-  return rawSubfeatures
-      .split(',')
-      .map((segment) => segment.trim())
-      .where((segment) => segment.isNotEmpty)
-      .map((segment) => _toSnakeCase(segment.replaceAll(RegExp(r'\s+'), '_')))
-      .toList();
+  return rawSubfeatures.split(',').map((segment) => segment.trim()).where((segment) => segment.isNotEmpty).map((segment) => _toSnakeCase(segment.replaceAll(RegExp(r'\s+'), '_'))).toList();
 }
 
-List<String> buildDefaultFeatureDirs() {
-  return [
-    'data/datasources',
-    'data/mappers',
-    'data/models',
-    'data/repositories',
-    'domain/entities',
-    'domain/repositories',
-    'domain/usecases',
-    'presentation/bloc',
-    'presentation/pages',
-    'presentation/widgets',
-  ];
+List<String> buildDefaultFeatureDirs() => [
+  'data/datasources',
+  'data/mappers',
+  'data/models',
+  'data/repositories',
+  'domain/entities',
+  'domain/repositories',
+  'domain/usecases',
+  'presentation/bloc',
+  'presentation/pages',
+  'presentation/widgets',
+];
+
+bool _asBool(dynamic value) {
+  if (value is bool) return value;
+  if (value is String) {
+    final normalized = value.trim().toLowerCase();
+    return normalized == 'true' || normalized == 'yes' || normalized == 'y';
+  }
+  return false;
 }
 
 void run(HookContext context) {
-  // Ambil input dari user
-  final targetPath = (context.vars['target_path'] as String? ?? 'lib/features')
-      .trim()
-      .replaceAll('\\', '/')
-      .replaceAll(RegExp(r'/+'), '/')
-      .replaceAll(RegExp(r'^/|/$'), '');
+  final useCustomTargetPath = _asBool(context.vars['use_custom_target_path']);
+  final requestedTargetPath = useCustomTargetPath
+      ? (context.vars['custom_target_path'] as String? ?? 'lib/features')
+      : 'lib/features';
+  final targetPath = requestedTargetPath.trim().replaceAll('\\', '/').replaceAll(RegExp(r'/+'), '/').replaceAll(RegExp(r'^/|/$'), '');
+
   final rawFeature = context.vars['feature_name'] as String? ?? '';
-  final rawSubfeatures =
-      (context.vars['subfeature_name'] as String?)?.trim() ?? '';
+  final hasSubfeatures = _asBool(context.vars['has_subfeatures']);
+  final rawSubfeatures = hasSubfeatures ? (context.vars['subfeature_name'] as String?)?.trim() ?? '' : '';
 
   if (rawFeature.trim().isEmpty) {
     context.logger.err('❌ Feature name tidak boleh kosong!');
     exit(1);
   }
 
-  // --- ✨ Sanitasi feature name ---
   final normalizedFeaturePath = normalizeFeaturePath(rawFeature);
-
-  // Nama feature terakhir (misal dari "balance/fund_transfer" → "fund_transfer")
   final featureName = normalizeFeatureName(rawFeature);
-
-  // --- ✨ Sanitasi subfeatures ---
   final subfeatures = normalizeSubfeatures(rawSubfeatures);
-
-  // Path dasar feature
   final featureBasePath = p.join(targetPath, normalizedFeaturePath);
-
-  // Struktur folder default
   final dirs = buildDefaultFeatureDirs();
 
-  // --- ✨ Generate struktur sesuai kondisi ---
   if (subfeatures.isEmpty) {
-    // Case: tanpa subfeature
     _createFeatureStructure(context, featureBasePath, dirs);
     _createTemplateFiles(context, featureBasePath, featureName);
-    _createInjector(context, featureBasePath, featureName, null);
+    _createInjector(context, featureBasePath, featureName);
   } else {
-    // Case: dengan subfeature
     for (final sub in subfeatures) {
       final subPath = p.join(featureBasePath, _toSnakeCase(sub));
       _createFeatureStructure(context, subPath, dirs);
       _createTemplateFiles(context, subPath, featureName, sub);
       _createInjector(context, subPath, featureName, sub);
     }
-
-    // Root injector di feature utama
     _createRootInjector(context, featureBasePath, featureName, subfeatures);
   }
 
-  context.logger.success(
-    '✨ Feature "$normalizedFeaturePath" generated successfully!',
-  );
+  context.logger.success('✨ Feature "$normalizedFeaturePath" generated successfully!');
 }
 
-/// Buat struktur folder dasar
-void _createFeatureStructure(
-  HookContext context,
-  String basePath,
-  List<String> dirs,
-) {
+void _createFeatureStructure(HookContext context, String basePath, List<String> dirs) {
   for (final dir in dirs) {
     final path = p.join(basePath, dir);
     Directory(path).createSync(recursive: true);
@@ -129,15 +91,8 @@ void _createFeatureStructure(
   }
 }
 
-/// Buat file template placeholder di tiap folder
-void _createTemplateFiles(
-  HookContext context,
-  String basePath,
-  String feature, [
-  String? subfeature,
-]) {
+void _createTemplateFiles(HookContext context, String basePath, String feature, [String? subfeature]) {
   final sub = _toSnakeCase(subfeature ?? feature);
-
   final templates = {
     'data/repositories': ['${sub}_repository_impl.dart'],
     'data/mappers': ['${sub}_mapper.dart'],
@@ -145,11 +100,7 @@ void _createTemplateFiles(
     'domain/entities': ['${sub}_entity.dart'],
     'domain/usecases': ['${sub}_usecase.dart'],
     'domain/repositories': ['${sub}_repository.dart'],
-    'presentation/bloc': [
-      '${sub}_bloc.dart',
-      '${sub}_event.dart',
-      '${sub}_state.dart'
-    ],
+    'presentation/bloc': ['${sub}_bloc.dart', '${sub}_event.dart', '${sub}_state.dart'],
     'presentation/pages': ['${sub}_page.dart'],
     'presentation/widgets': ['${sub}_widget.dart'],
   };
@@ -166,7 +117,6 @@ void _createTemplateFiles(
   });
 }
 
-/// Helper untuk generate boilerplate code untuk masing-masing file
 String _getFileContent(String folder, String file, String sub) {
   final name = _toPascalCase(sub);
   if (folder == 'data/repositories') {
@@ -234,7 +184,7 @@ abstract class ${name}Event {
   const ${name}Event();
 }
 ''';
-    } else if (file.endsWith('_state.dart')) {
+    } else {
       return '''
 abstract class ${name}State {
   const ${name}State();
@@ -256,9 +206,7 @@ class ${name}Page extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Scaffold(
-      body: Center(
-        child: Text('${name}Page'),
-      ),
+      body: Center(child: Text('${name}Page')),
     );
   }
 }
@@ -272,33 +220,18 @@ class ${name}Widget extends StatelessWidget {
   const ${name}Widget({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return const SizedBox();
-  }
+  Widget build(BuildContext context) => const SizedBox();
 }
 ''';
   }
   return '// TODO: Implement $file';
 }
 
-/// Buat injector untuk tiap feature/subfeature
-void _createInjector(
-  HookContext context,
-  String basePath,
-  String feature, [
-  String? subfeature,
-]) {
-  final fileName = subfeature == null
-      ? '${_toSnakeCase(feature)}_injector.dart'
-      : '${_toSnakeCase(subfeature)}_injector.dart';
-
+void _createInjector(HookContext context, String basePath, String feature, [String? subfeature]) {
+  final fileName = subfeature == null ? '${_toSnakeCase(feature)}_injector.dart' : '${_toSnakeCase(subfeature)}_injector.dart';
   final injectorFile = File(p.join(basePath, fileName));
-
   if (!injectorFile.existsSync()) {
-    final funcName = subfeature == null
-        ? 'inject${_toPascalCase(feature)}'
-        : 'inject${_toPascalCase(subfeature)}';
-
+    final funcName = subfeature == null ? 'inject${_toPascalCase(feature)}' : 'inject${_toPascalCase(subfeature)}';
     injectorFile.writeAsStringSync('''
 // ignore_for_file: depend_on_referenced_packages
 import 'package:get_it/get_it.dart';
@@ -306,55 +239,30 @@ import 'package:get_it/get_it.dart';
 void $funcName(GetIt sl) {
   // TODO: Register your dependencies here.
 }
-    ''');
-
+''');
     context.logger.success('⚙️ Created injector file: ${injectorFile.path}');
   }
 }
 
-/// Buat root injector yang menggabungkan semua subfeature injector
-void _createRootInjector(
-  HookContext context,
-  String basePath,
-  String feature,
-  List<String> subfeatures,
-) {
-  final fileName = '${_toSnakeCase(feature)}_injector.dart';
-  final injectorFile = File(p.join(basePath, fileName));
-
-  // Kumpulkan semua subfeatures: yang baru digenerate + yang sudah ada di disk
-  final allSubfeatures = <String>{};
-  allSubfeatures.addAll(subfeatures.map((s) => _toSnakeCase(s)));
-
+void _createRootInjector(HookContext context, String basePath, String feature, List<String> subfeatures) {
+  final injectorFile = File(p.join(basePath, '${_toSnakeCase(feature)}_injector.dart'));
+  final allSubfeatures = <String>{...subfeatures.map(_toSnakeCase)};
   final dir = Directory(basePath);
   if (dir.existsSync()) {
     for (final entity in dir.listSync()) {
-      if (entity is! Directory) {
-        continue;
-      }
-
-      final name = p.basename(entity.path);
-      final subInjector = File(
-        p.join(entity.path, '${_toSnakeCase(name)}_injector.dart'),
-      );
-      if (subInjector.existsSync()) {
-        allSubfeatures.add(_toSnakeCase(name));
+      if (entity is Directory) {
+        final name = p.basename(entity.path);
+        if (File(p.join(entity.path, '${_toSnakeCase(name)}_injector.dart')).existsSync()) {
+          allSubfeatures.add(_toSnakeCase(name));
+        }
       }
     }
   }
 
   final sortedSubs = allSubfeatures.toList()..sort();
-
-  final imports = sortedSubs.map((sub) {
-    final subPath = p.posix.join('.', sub, '${sub}_injector.dart');
-    return "import '$subPath';";
-  }).join('\n');
-
-  final calls = sortedSubs.map((sub) {
-    return '  inject${_toPascalCase(sub)}(sl);';
-  }).join('\n');
-
-  final content = '''
+  final imports = sortedSubs.map((sub) => "import './$sub/${sub}_injector.dart';").join('\n');
+  final calls = sortedSubs.map((sub) => '  inject${_toPascalCase(sub)}(sl);').join('\n');
+  injectorFile.writeAsStringSync('''
 // ignore_for_file: depend_on_referenced_packages
 import 'package:get_it/get_it.dart';
 $imports
@@ -362,8 +270,6 @@ $imports
 void inject${_toPascalCase(feature)}(GetIt sl) {
 $calls
 }
-  ''';
-
-  injectorFile.writeAsStringSync(content);
+''');
   context.logger.success('🧩 Created root injector file: ${injectorFile.path}');
 }

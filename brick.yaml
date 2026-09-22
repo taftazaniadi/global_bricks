@@ -15,12 +15,6 @@ vars:
     default: ""
     prompt: "Feature name (e.g., auth or checkout/payment) : "
 
-  has_subfeatures:
-    type: boolean
-    description: Whether the feature should include subfeatures
-    default: false
-    prompt: "Add subfeatures? (yes/no) : "
-
   subfeature_name:
     type: string
     description: Comma-separated list of subfeatures (used when the answer above is yes)

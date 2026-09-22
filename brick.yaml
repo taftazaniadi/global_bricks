@@ -3,10 +3,10 @@ description: Clean Architecture Feature Template with optional sub-feature and G
 version: 0.1.0+1
 
 vars:
-  use_custom_target_path:
+  default_target:
     type: boolean
-    description: Whether to use a custom target directory path
-    default: false
+    description: Whether to use the default target directory path
+    default: true
     prompt: "Use default target path? (yes/no) : "
 
   custom_target_path:

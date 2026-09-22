@@ -1,19 +1,13 @@
 name: features
 description: Clean Architecture Feature Template with optional sub-feature and GetIt injector.
-version: 0.1.0+1
+version: 0.1.0+2
 
 vars:
-  default_target:
-    type: boolean
-    description: Whether to use the default target directory path
-    default: true
-    prompt: "Use default target path? (yes/no) : "
-
-  custom_target_path:
+  target_path:
     type: string
-    description: Custom target directory path for the feature (relative to project root)
+    description: Target directory path for the feature (relative to project root)
     default: "lib/features"
-    prompt: "Custom target directory path : "
+    prompt: "Target directory path : "
 
   feature_name:
     type: string

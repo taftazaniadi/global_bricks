@@ -7,7 +7,7 @@ vars:
     type: boolean
     description: Whether to use a custom target directory path
     default: false
-    prompt: "Use a custom target path? (yes/no) : "
+    prompt: "Use default target path? (yes/no) : "
 
   custom_target_path:
     type: string

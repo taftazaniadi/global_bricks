@@ -45,10 +45,10 @@ bool _asBool(dynamic value) {
 }
 
 void run(HookContext context) {
-  final useCustomTargetPath = _asBool(context.vars['use_custom_target_path']);
-  final requestedTargetPath = useCustomTargetPath
-      ? (context.vars['custom_target_path'] as String? ?? 'lib/features')
-      : 'lib/features';
+  final useDefaultTarget = _asBool(context.vars['default_target']);
+  final requestedTargetPath = useDefaultTarget
+      ? 'lib/features'
+      : (context.vars['custom_target_path'] as String? ?? 'lib/features');
   final targetPath = requestedTargetPath.trim().replaceAll('\\', '/').replaceAll(RegExp(r'/+'), '/').replaceAll(RegExp(r'^/|/$'), '');
 
   final rawFeature = context.vars['feature_name'] as String? ?? '';
